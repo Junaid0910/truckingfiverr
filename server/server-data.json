@@ -1,0 +1,20 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "email": "testuser@example.com",
+      "password": "$2a$10$c0d503YKoOaoyD84z.qi9evGvcEi54SOvDqVuWA9SHNPSArC1a9z6",
+      "role": "student",
+      "created_at": "2025-10-20T17:34:06.863Z"
+    },
+    {
+      "id": 2,
+      "email": "businessjunaid09@gmail.com",
+      "password": "$2a$10$LQzuCuS7NbskCQ6TtA3FZuIeUqTxgPzkrfCiLevLsUqCvjyw8VHwi",
+      "role": "student",
+      "created_at": "2025-10-20T17:51:41.270Z"
+    }
+  ],
+  "programs": [],
+  "lastId": 2
+}

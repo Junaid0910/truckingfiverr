@@ -1,0 +1,115 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+	/* Theme: dark with red (primary), yellow (accent), white */
+	--color-primary: #ef4444; /* red-500 */
+	--color-primary-600: #ef4444;
+	--color-primary-700: #b91c1c; /* red-700 */
+	--color-primary-50: #fff1f2;
+	--color-primary-foreground: #ffffff;
+
+	--color-accent: #f59e0b; /* amber/yellow */
+
+	/* Dark surface and text */
+		--color-bg: #000000; /* pure black */
+	--color-surface: #0b0b0b;
+	--color-card: #0f0f10;
+		--color-text: #ffffff; /* white */
+	--color-muted: #94a3b8; /* muted light */
+	--color-border: rgba(255,255,255,0.06);
+}
+
+/* Optional theme class if you want to scope the theme to a container */
+.theme {
+	--color-primary: var(--color-primary);
+	--color-primary-600: var(--color-primary-600);
+	--color-primary-700: var(--color-primary-700);
+	--color-primary-50: var(--color-primary-50);
+	--color-primary-foreground: var(--color-primary-foreground);
+}
+
+/* Small helpers to ensure consistent focus outlines */
+:root {
+	--focus-ring: 3px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+}
+
+/* Small utility classes for theme colors (for components that need explicit colors) */
+.bg-primary { background-color: var(--color-primary) !important }
+.bg-accent { background-color: var(--color-accent) !important }
+.text-primary { color: var(--color-primary) !important }
+.text-accent { color: var(--color-accent) !important }
+.text-muted { color: var(--color-muted) !important }
+
+/* Global dark background and text */
+html, body { height: 100%; background: var(--color-bg); color: var(--color-text); }
+
+/* Preferred surface colors for common containers */
+.min-h-screen, main, .card, .bg-white { background: transparent; }
+
+/* Map commonly used Tailwind utility classes to dark equivalents so components automatically look dark */
+.bg-white { background-color: transparent !important }
+.text-slate-700 { color: var(--color-text) !important }
+.text-slate-600 { color: var(--color-muted) !important }
+.border-slate-200 { border-color: var(--color-border) !important }
+.bg-emerald-600, .bg-emerald-500 { background-color: var(--color-primary) !important }
+.text-emerald-600 { color: var(--color-primary) !important }
+.bg-emerald-50 { background-color: rgba(239,68,68,0.06) !important }
+
+/* Links and interactive elements */
+a { color: var(--color-primary); text-decoration: none }
+a:hover { color: var(--color-primary-700); }
+
+button, .btn { color: var(--color-text); }
+.btn-primary { background: var(--color-primary); color: var(--color-primary-foreground); }
+.btn-accent { background: var(--color-accent); color: #111827; }
+
+/* Inputs, cards and surfaces */
+input, textarea, select { background: var(--color-surface); color: var(--color-text); border: 1px solid var(--color-border); }
+
+/* Make sure the header border is subtle on dark */
+.border-b { border-bottom-color: var(--color-border) !important }
+
+/* Strong global dark overrides: force dark backgrounds and light text for common containers and Tailwind utility classes */
+html, body, #root, .min-h-screen, main, .container, .card, .site, .app {
+	background-color: var(--color-bg) !important;
+	color: var(--color-text) !important;
+}
+
+/* Neutralize common light background utilities that appear in components */
+.bg-white, .bg-gray-50, .bg-gray-100, .bg-slate-50, .bg-slate-100, .bg-slate-200, .bg-neutral-50, .bg-neutral-100 {
+	background-color: transparent !important;
+}
+
+/* Ensure cards and panels use a dark surface */
+.card, .panel, .surface, .bg-card { background-color: var(--color-card) !important; color: var(--color-text) !important }
+
+/* Ensure borders use subtle light-on-dark color */
+.border, .ring, .shadow { border-color: var(--color-border) !important }
+
+/* Inputs/forms */
+input, textarea, select, .input {
+	background: var(--color-surface) !important;
+	color: var(--color-text) !important;
+	border-color: var(--color-border) !important;
+}
+
+/* Make sure any explicitly light text is flipped to light-on-dark */
+.text-white, .text-slate-900, .text-slate-800 { color: var(--color-text) !important }
+
+/* Links and CTA */
+.link { color: var(--color-primary) !important }
+.link:hover { color: var(--color-primary-700) !important }
+
+/* Force structural elements to dark surfaces */
+section, article, header, footer, nav, aside, figure, ul, li, .section, .panel, .card, .container, .hero {
+	background-color: var(--color-card) !important;
+	color: var(--color-text) !important;
+	border-color: var(--color-border) !important;
+}
+
+/* Remove stray white backgrounds on elements with inline bg styles */
+[style*="background: white"], [style*="background:#fff"], [style*="background:#ffffff"] {
+	background: var(--color-card) !important;
+}

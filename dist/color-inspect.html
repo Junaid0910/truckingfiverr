@@ -1,0 +1,109 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Logo Color Inspector</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; padding: 24px; }
+      .swatch { display:inline-block; width:96px; height:96px; margin:8px; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.12); }
+      .meta { margin-top:12px; }
+      .hex { font-family: monospace; font-size:14px }
+      #logo { max-width:320px; margin-top:12px; border:1px solid #eee; }
+      .btn { background:#111827;color:#fff;padding:8px 12px;border-radius:6px;border:none;cursor:pointer }
+    </style>
+  </head>
+  <body>
+    <h1>Logo Color Inspector</h1>
+    <p>This page will load <code>/logo.png</code>, sample its pixels, and show the most common colors as hex swatches. Open this while the dev server is running.</p>
+
+    <div>
+      <button id="run" class="btn">Analyze /logo.png</button>
+    </div>
+
+    <img id="logo" src="/logo.png" alt="logo" crossorigin="anonymous" />
+
+    <div id="results" class="meta"></div>
+
+    <script>
+      function toHex(r,g,b){
+        return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
+      }
+
+      function quantize(r,g,b,depth){
+        // reduce color resolution to group similar colors
+        const shift = Math.max(0, 8 - depth);
+        return [(r >> shift) << shift, (g >> shift) << shift, (b >> shift) << shift];
+      }
+
+      async function analyzeImage(src){
+        return new Promise((resolve, reject) => {
+          const img = document.getElementById('logo');
+          if(!img.complete){
+            img.onload = () => run();
+            img.onerror = reject;
+          } else run();
+
+          function run(){
+            try{
+              const w = 100, h = 100; // sample size
+              const c = document.createElement('canvas');
+              c.width = w; c.height = h;
+              const ctx = c.getContext('2d');
+              // draw the image into canvas scaled to sampling size
+              ctx.drawImage(img, 0, 0, w, h);
+              const data = ctx.getImageData(0,0,w,h).data;
+              const counts = new Map();
+              const depth = 5; // quantization depth (1-8); higher = more buckets
+              for(let i=0;i<data.length;i+=4){
+                const a = data[i+3];
+                if(a < 16) continue; // skip mostly transparent
+                const [r,g,b] = quantize(data[i], data[i+1], data[i+2], depth);
+                const key = r+','+g+','+b;
+                counts.set(key, (counts.get(key) || 0) + 1);
+              }
+              // sort by frequency
+              const arr = Array.from(counts.entries()).sort((a,b)=>b[1]-a[1]);
+              const total = arr.reduce((s,[k,v])=>s+v,0) || 1;
+              const top = arr.slice(0,8).map(([k,v])=>({rgb:k.split(',').map(Number), count:v, pct: Math.round((v/total)*100)}));
+              resolve({top, total});
+            } catch(err){ reject(err); }
+          }
+        });
+      }
+
+      document.getElementById('run').addEventListener('click', async ()=>{
+        const results = document.getElementById('results');
+        results.innerHTML = 'Analyzing...';
+        try{
+          const {top} = await analyzeImage('/logo.png');
+          results.innerHTML = '';
+          top.forEach(item=>{
+            const [r,g,b] = item.rgb;
+            const hex = toHex(r,g,b);
+            const sw = document.createElement('div');
+            sw.className = 'swatch';
+            sw.style.background = hex;
+            const caption = document.createElement('div');
+            caption.className = 'hex';
+            caption.textContent = hex + ' — ' + item.pct + '%';
+            const wrap = document.createElement('div');
+            wrap.style.display = 'inline-block';
+            wrap.style.textAlign = 'center';
+            wrap.appendChild(sw);
+            wrap.appendChild(caption);
+            results.appendChild(wrap);
+          });
+          // show CSS snippet to set primary color
+          if(top.length){
+            const primaryHex = toHex(...top[0].rgb);
+            const css = document.createElement('pre');
+            css.textContent = `:root {\n  --color-primary: ${primaryHex};\n  --color-primary-600: ${primaryHex};\n}`;
+            css.style.marginTop = '18px';
+            results.appendChild(css);
+          }
+        }catch(err){ results.innerHTML = 'Error: '+err.message }
+      });
+    </script>
+  </body>
+ </html>
