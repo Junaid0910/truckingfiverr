@@ -113,3 +113,12 @@ section, article, header, footer, nav, aside, figure, ul, li, .section, .panel, 
 [style*="background: white"], [style*="background:#fff"], [style*="background:#ffffff"] {
 	background: var(--color-card) !important;
 }
+
+/* Ensure navigation links remain readable when hovered (dark theme) */
+nav a {
+	color: inherit;
+}
+nav a:hover {
+	color: var(--color-primary) !important;
+	background-color: rgba(239,68,68,0.06) !important; /* subtle red tint */
+}

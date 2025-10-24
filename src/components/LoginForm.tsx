@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuth } from '../lib/AuthContext';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,7 +10,7 @@ import { toast } from 'react-toastify';
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
-  userType: z.enum(['student', 'instructor', 'admin', 'employer'], {
+  userType: z.enum(['student', 'instructor', 'employer'], {
     required_error: 'Please select your user type'
   })
 });
@@ -35,41 +36,26 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
 
   const userType = watch('userType');
 
+  const { login } = useAuth();
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: data.email, password: data.password })
-      });
-      const body = await res.json();
-      if (!res.ok) {
-        const message = body?.error || 'Login failed. Please check your credentials.';
-        toast.error(message);
-        return;
-      }
-      // store token
-      if (body.token) localStorage.setItem('token', body.token);
-
-      // fetch real user info from /api/auth/me using the token
-      try {
-        const meRes = await fetch('/api/auth/me', {
-          headers: { Authorization: `Bearer ${body.token}` }
-        });
-        if (!meRes.ok) throw new Error('Failed to verify token');
-        const me = await meRes.json();
-        const role = me.role || data.userType || 'student';
-        toast.success(`Welcome back! Logging in as ${role}...`);
-        onLogin(role);
-      } catch (err) {
-        console.error('verify token error', err);
-        toast.error('Login succeeded but could not verify user role.');
-        onLogin(data.userType);
-      }
+  // use centralized auth.login
+  const me = await login(data.email, data.password);
+  // Prefer the explicitly selected user type (radio) so demo users can choose a role.
+  const role = data.userType || (me && (me as any).role) || 'student';
+      toast.success(`Welcome back! Logging in as ${role}...`);
+      onLogin(role);
     } catch (error: any) {
       console.error('login error', error);
-      toast.error('Login failed. Please check your credentials.');
+      // For demo mode allow proceeding with the selected user type even if backend auth fails
+      toast.error('Login failed. Falling back to selected user type for demo mode.');
+      try {
+        const role = data.userType || 'student';
+        onLogin(role);
+      } catch (e) {
+        // ignore
+      }
     } finally {
       setIsLoading(false);
     }
@@ -78,7 +64,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
   const userTypeOptions = [
     { value: 'student', label: 'Student', description: 'Access courses and track progress' },
     { value: 'instructor', label: 'Instructor', description: 'Manage classes and students' },
-    { value: 'admin', label: 'Administrator', description: 'Full system access' },
     { value: 'employer', label: 'Employer', description: 'Manage employee training' }
   ];
 
@@ -220,7 +205,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
             {/* Links */}
             <div className="flex items-center justify-between text-sm">
               <a href="/forgot-password" className="text-emerald-600 hover:text-emerald-500 transition-colors">
-                Forgot your password?
+              
               </a>
               <a href="/register" className="text-emerald-600 hover:text-emerald-500 transition-colors">
                 Create account

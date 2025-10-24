@@ -1,27 +1,21 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Users, Calendar, BookOpen, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
+import api from '../lib/api';
+import { toast } from 'react-toastify';
 
 const InstructorDashboard: React.FC = () => {
-  const todayClasses = [
-    { id: 1, title: 'CDL-A Theory', time: '9:00 AM - 11:00 AM', students: 12, room: 'Room A' },
-    { id: 2, title: 'Backing Practice', time: '2:00 PM - 4:00 PM', students: 8, room: 'Yard 1' },
-    { id: 3, title: 'Road Test Prep', time: '4:30 PM - 6:00 PM', students: 6, room: 'Yard 2' },
-  ];
-
-  const recentStudents = [
-    { id: 1, name: 'John Doe', progress: 85, status: 'On Track', lastActivity: '2 hours ago' },
-    { id: 2, name: 'Jane Smith', progress: 92, status: 'Excellent', lastActivity: '1 day ago' },
-    { id: 3, name: 'Mike Johnson', progress: 65, status: 'Needs Help', lastActivity: '3 hours ago' },
-    { id: 4, name: 'Sarah Wilson', progress: 78, status: 'Good', lastActivity: '5 hours ago' },
-  ];
+  const [programsCount, setProgramsCount] = useState<number | null>(null);
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const stats = [
-    { name: 'Active Students', value: '24', icon: Users, color: 'text-emerald-600' },
-    { name: 'Classes Today', value: '3', icon: Calendar, color: 'text-sky-500' },
-    { name: 'Hours This Week', value: '32', icon: Clock, color: 'text-yellow-500' },
-    { name: 'Completion Rate', value: '94%', icon: CheckCircle, color: 'text-purple-500' },
+    { name: 'Active Students', value: profile?.activeStudents || '—', icon: Users, color: 'text-emerald-600' },
+    { name: 'Classes Today', value: profile?.classesToday || '—', icon: Calendar, color: 'text-sky-500' },
+    { name: 'Available Programs', value: programsCount ?? '—', icon: Clock, color: 'text-yellow-500' },
+    { name: 'Completion Rate', value: profile?.completionRate ? `${profile.completionRate}%` : '—', icon: CheckCircle, color: 'text-purple-500' },
   ];
 
   const getStatusColor = (status: string) => {
@@ -34,12 +28,97 @@ const InstructorDashboard: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    let mounted = true;
+    async function load() {
+      setLoading(true);
+      try {
+        const programs = await api.get('/programs');
+        const prof = await api.get('/profiles/me');
+        if (!mounted) return;
+        setProgramsCount(Array.isArray(programs) ? programs.length : 0);
+        setProfile(prof?.profile || prof?.user || null);
+      } catch (err: any) {
+        setError(err?.message || 'Failed to load dashboard data');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+    load();
+    return () => { mounted = false; };
+  }, []);
+
+  const [clocking, setClocking] = useState(false);
+  const [clockedEntry, setClockedEntry] = useState<any | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleStartClass = async () => {
+    setClocking(true);
+    try {
+      await api.post('/attendance/clockin', { note: 'Started from dashboard' });
+      setClockedEntry({ startedAt: new Date().toISOString() });
+      toast.success('Class started (clocked in)');
+    } catch (err: any) {
+      toast.error(err?.data?.error || err.message || 'Failed to start class');
+    } finally { setClocking(false); }
+  };
+
+  const handleClockOut = async () => {
+    setClocking(true);
+    try {
+      const resp = await api.post('/attendance/clockout');
+      setClockedEntry({ ...clockedEntry, endedAt: new Date().toISOString(), durationMinutes: resp?.durationMinutes });
+      toast.success(`Clocked out — duration ${resp?.durationMinutes ?? 'n/a'} minutes`);
+    } catch (err: any) {
+      toast.error(err?.data?.error || err.message || 'Failed to clock out');
+    } finally { setClocking(false); }
+  };
+
+  const handleTakeAttendance = async () => {
+    try {
+      const programs = await api.get('/programs');
+      const programId = profile?.programId || (Array.isArray(programs) && programs.length ? programs[0].id : null);
+      if (!programId) return toast.error('No program selected for attendance');
+      await api.post('/attendance/checkin', { programId });
+      toast.success('Attendance checked in');
+    } catch (err: any) {
+      toast.error(err?.data?.error || err.message || 'Failed to take attendance');
+    }
+  };
+
+  const handleUploadMaterial = async (file?: File) => {
+    if (!file) return toast.error('No file selected');
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch((window.location.origin || '') + '/api/documents/upload', { method: 'POST', body: fd, headers: { 'Accept': 'application/json' }, credentials: 'same-origin' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'upload failed');
+      toast.success('Material uploaded');
+    } catch (err: any) {
+      toast.error(err?.data?.error || err.message || 'Upload failed');
+    } finally { setUploading(false); }
+  };
+
+  const handleGradeAssignment = async () => {
+    try {
+      const to = window.prompt('Enter student identifier or email to notify about grade:');
+      if (!to) return;
+      const payload = { subject: 'Assignment graded', text: 'Your assignment was graded by instructor.' };
+      await api.post('/notifications/enqueue', { type: 'email', to, payload });
+      toast.success('Student notified about grade');
+    } catch (err: any) {
+      toast.error(err?.data?.error || err.message || 'Failed to notify student');
+    }
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-900 font-['Inter']">Good morning, Instructor!</h1>
-        <p className="text-slate-600 mt-2">You have 3 classes scheduled for today.</p>
+        <p className="text-slate-600 mt-2">{loading ? 'Loading...' : error ? error : `You have ${profile?.classesToday || 0} classes scheduled for today.`}</p>
       </div>
 
       {/* Stats Grid */}
@@ -82,28 +161,32 @@ const InstructorDashboard: React.FC = () => {
               </Link>
             </div>
             <div className="space-y-4">
-              {todayClasses.map((class_) => (
-                <div key={class_.id} className="border border-slate-200 rounded-lg p-4 hover:border-emerald-300 transition-colors">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="font-medium text-slate-900">{class_.title}</h3>
-                      <p className="text-sm text-slate-600 mt-1">{class_.time}</p>
-                      <div className="flex items-center space-x-4 mt-2">
-                        <span className="text-sm text-slate-500">{class_.students} students</span>
-                        <span className="text-sm text-slate-500">{class_.room}</span>
+              {profile?.todayClasses && Array.isArray(profile.todayClasses) && profile.todayClasses.length > 0 ? (
+                profile.todayClasses.map((class_: any) => (
+                  <div key={class_.id} className="border border-slate-200 rounded-lg p-4 hover:border-emerald-300 transition-colors">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-medium text-slate-900">{class_.title}</h3>
+                        <p className="text-sm text-slate-600 mt-1">{class_.time}</p>
+                        <div className="flex items-center space-x-4 mt-2">
+                          <span className="text-sm text-slate-500">{class_.students} students</span>
+                          <span className="text-sm text-slate-500">{class_.room}</span>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <button type="button" onClick={handleStartClass} disabled={clocking} className="px-3 py-1 bg-emerald-600 text-white text-sm rounded-md hover:bg-emerald-700 transition-colors">
+                          {clocking ? 'Starting...' : 'Start Class'}
+                        </button>
+                        <button type="button" onClick={() => { /* placeholder for details modal */ }} className="px-3 py-1 bg-slate-100 text-slate-700 text-sm rounded-md hover:bg-slate-200 transition-colors">
+                          View Details
+                        </button>
                       </div>
                     </div>
-                    <div className="flex space-x-2">
-                      <button className="px-3 py-1 bg-emerald-600 text-white text-sm rounded-md hover:bg-emerald-700 transition-colors">
-                        Start Class
-                      </button>
-                      <button className="px-3 py-1 bg-slate-100 text-slate-700 text-sm rounded-md hover:bg-slate-200 transition-colors">
-                        View Details
-                      </button>
-                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-slate-600">No classes scheduled for today.</p>
+              )}
             </div>
           </motion.div>
 
@@ -122,10 +205,10 @@ const InstructorDashboard: React.FC = () => {
                 <p className="text-sm text-slate-500">Since 8:30 AM (2h 30m)</p>
               </div>
               <div className="flex space-x-3">
-                <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
-                  Clock Out
+                <button type="button" onClick={handleClockOut} disabled={clocking} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                  {clocking ? 'Working...' : 'Clock Out'}
                 </button>
-                <button className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors">
+                <button type="button" onClick={() => { /* take a break */ }} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors">
                   Break
                 </button>
               </div>
@@ -147,25 +230,29 @@ const InstructorDashboard: React.FC = () => {
               <Users className="h-5 w-5 text-slate-400" aria-hidden="true" />
             </div>
             <div className="space-y-4">
-              {recentStudents.map((student) => (
-                <div key={student.id} className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-slate-900">{student.name}</p>
-                    <p className="text-xs text-slate-500">{student.lastActivity}</p>
-                    <div className="w-full bg-slate-200 rounded-full h-1.5 mt-2">
-                      <div 
-                        className="bg-emerald-600 h-1.5 rounded-full" 
-                        style={{ width: `${student.progress}%` }}
-                      ></div>
+              {profile?.recentStudents && Array.isArray(profile.recentStudents) && profile.recentStudents.length > 0 ? (
+                profile.recentStudents.map((student: any) => (
+                  <div key={student.id} className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-slate-900">{student.name}</p>
+                      <p className="text-xs text-slate-500">{student.lastActivity}</p>
+                      <div className="w-full bg-slate-200 rounded-full h-1.5 mt-2">
+                        <div 
+                          className="bg-emerald-600 h-1.5 rounded-full" 
+                          style={{ width: `${student.progress}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                    <div className="ml-3">
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(student.status)}`}>
+                        {student.status}
+                      </span>
                     </div>
                   </div>
-                  <div className="ml-3">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(student.status)}`}>
-                      {student.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-slate-600">No recent students to show.</p>
+              )}
             </div>
             <Link
               to="/instructor/students"
@@ -184,15 +271,15 @@ const InstructorDashboard: React.FC = () => {
           >
             <h3 className="text-lg font-semibold text-slate-900 font-['Inter'] mb-4">Quick Actions</h3>
             <div className="space-y-3">
-              <button className="w-full flex items-center space-x-3 px-4 py-3 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-colors">
+              <button onClick={()=>{ const f = window.prompt('Paste public file URL or leave blank to upload'); if (f) { handleUploadMaterial(); } }} disabled={uploading} className="w-full flex items-center space-x-3 px-4 py-3 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-colors">
                 <BookOpen className="h-5 w-5" aria-hidden="true" />
-                <span className="text-sm font-medium">Upload Course Material</span>
+                <span className="text-sm font-medium">{uploading ? 'Uploading...' : 'Upload Course Material'}</span>
               </button>
-              <button className="w-full flex items-center space-x-3 px-4 py-3 bg-sky-50 text-sky-700 rounded-lg hover:bg-sky-100 transition-colors">
+              <button onClick={handleTakeAttendance} className="w-full flex items-center space-x-3 px-4 py-3 bg-sky-50 text-sky-700 rounded-lg hover:bg-sky-100 transition-colors">
                 <Users className="h-5 w-5" aria-hidden="true" />
                 <span className="text-sm font-medium">Take Attendance</span>
               </button>
-              <button className="w-full flex items-center space-x-3 px-4 py-3 bg-yellow-50 text-yellow-700 rounded-lg hover:bg-yellow-100 transition-colors">
+              <button onClick={handleGradeAssignment} className="w-full flex items-center space-x-3 px-4 py-3 bg-yellow-50 text-yellow-700 rounded-lg hover:bg-yellow-100 transition-colors">
                 <CheckCircle className="h-5 w-5" aria-hidden="true" />
                 <span className="text-sm font-medium">Grade Assignments</span>
               </button>

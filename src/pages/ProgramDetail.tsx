@@ -1,5 +1,5 @@
-import React from 'react';
-    import { useParams, Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+  import { useParams, Link, useNavigate } from 'react-router-dom';
     import Header from '../components/Header';
     import Footer from '../components/Footer';
     import { ArrowLeft, Clock, Users, CheckCircle, Star } from 'lucide-react';
@@ -7,85 +7,20 @@ import React from 'react';
 
     const ProgramDetail: React.FC = () => {
       const { id } = useParams<{ id: string }>();
+      const navigate = useNavigate();
+      const [program, setProgram] = useState<any>(null);
+      const [loading, setLoading] = useState(true);
 
-      const programs = {
-        'cdl-a': {
-          title: 'CDL Class A',
-          description: 'Comprehensive training for operating tractor-trailers and combination vehicles.',
-          duration: '4-6 weeks',
-          capacity: '12 students',
-          price: '$4,500',
-          rating: 4.8,
-          reviews: 127,
-          features: [
-            'Pre-trip inspection training',
-            'Backing and maneuvering',
-            'On-road driving experience',
-            'DOT physical assistance',
-            'Job placement support',
-            'Air brake systems',
-            'Hazardous materials endorsement prep',
-            'Emergency procedures'
-          ],
-          curriculum: [
-            'Week 1-2: Classroom Theory',
-            'Week 3-4: Behind-the-Wheel Training',
-            'Week 5-6: Advanced Maneuvers & Testing'
-          ],
-          image: 'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
-        },
-        'cdl-b': {
-          title: 'CDL Class B',
-          description: 'Training for straight trucks, large buses, and segmented buses.',
-          duration: '3-4 weeks',
-          capacity: '10 students',
-          price: '$3,200',
-          rating: 4.7,
-          reviews: 89,
-          features: [
-            'Straight truck operation',
-            'Air brake systems',
-            'City driving skills',
-            'Passenger endorsement',
-            'Career guidance',
-            'Vehicle maintenance basics',
-            'Safety protocols'
-          ],
-          curriculum: [
-            'Week 1: Classroom Fundamentals',
-            'Week 2-3: Practical Training',
-            'Week 4: Testing & Certification'
-          ],
-          image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'
-        },
-        'refresher': {
-          title: 'Refresher Course',
-          description: 'Perfect for drivers returning to the industry or needing skill updates.',
-          duration: '1-2 weeks',
-          capacity: '8 students',
-          price: '$1,800',
-          rating: 4.9,
-          reviews: 56,
-          features: [
-            'Skills assessment',
-            'Updated regulations',
-            'Confidence building',
-            'Equipment familiarization',
-            'Quick job placement',
-            'Latest safety standards'
-          ],
-          curriculum: [
-            'Day 1-3: Review & Assessment',
-            'Day 4-7: Hands-on Practice',
-            'Day 8-10: Final Evaluation'
-          ],
-          image: 'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'
-        }
-      };
+      useEffect(()=>{
+        let mounted = true;
+        import('../lib/api').then(({ api }) => {
+          api.get(`/programs/${id}`).then(data => { if (!mounted) return; setProgram(data); }).catch(err => { console.error(err); }).finally(()=>setLoading(false));
+        });
+        return ()=>{ mounted = false; };
+      }, [id]);
 
-      const program = programs[id as keyof typeof programs];
-
-      if (!program) {
+  if (loading) return <div>Loading...</div>;
+  if (!program) {
         return (
           <div className="min-h-screen">
             <Header />
@@ -242,6 +177,29 @@ import React from 'react';
                       >
                         Enroll Now
                       </Link>
+
+                      <button
+                        onClick={async () => {
+                          try {
+                            const { api } = await import('../lib/api');
+                            const priceNumber = (program.price || '').replace(/[^0-9.]/g,'') || 0;
+                            const res = await api.post('/enrollments', { programId: program.id, price: Number(priceNumber) });
+                            if (res && res.checkout && res.checkout.url) {
+                              // redirect to stripe checkout
+                              window.location.href = res.checkout.url;
+                              return;
+                            }
+                            // otherwise navigate to student courses or enrollments
+                            navigate('/student/courses');
+                          } catch (err: any) {
+                            console.error('enroll error', err);
+                            alert(err?.data?.error || err?.message || 'Failed to enroll');
+                          }
+                        }}
+                        className="mt-4 w-full bg-emerald-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-emerald-700 transition-colors text-center block"
+                      >
+                        Enroll & Pay
+                      </button>
 
                       <p className="text-xs text-slate-500 mt-4 text-center">
                         Financing options available. No payment required until class starts.

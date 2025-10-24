@@ -1,33 +1,63 @@
-import React from 'react';
-    import { Link } from 'react-router-dom';
-    import { Calendar, CreditCard, Briefcase, Award, Clock, TrendingUp, AlertCircle } from 'lucide-react';
-    import { motion } from 'framer-motion';
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Calendar, CreditCard, Briefcase, Award, Clock, TrendingUp, AlertCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
+import api from '../lib/api';
 
     const StudentDashboard: React.FC = () => {
-      const upcomingClasses = [
-        { id: 1, title: 'Pre-Trip Inspection', time: '9:00 AM', date: 'Today', instructor: 'John Smith' },
-        { id: 2, title: 'Backing Maneuvers', time: '2:00 PM', date: 'Tomorrow', instructor: 'Sarah Johnson' },
-        { id: 3, title: 'Road Test Practice', time: '10:00 AM', date: 'Friday', instructor: 'Mike Wilson' },
-      ];
+      const [upcomingClasses, setUpcomingClasses] = useState<any[]>([]);
 
-      const courseProgress = [
-        { name: 'Classroom Theory', progress: 85, total: 40, completed: 34 },
-        { name: 'Driving Practice', progress: 60, total: 20, completed: 12 },
-        { name: 'Pre-Trip Inspection', progress: 90, total: 10, completed: 9 },
-      ];
+      const [courseProgress, setCourseProgress] = useState<any[]>([]);
 
-      const recentJobs = [
-        { id: 1, company: 'Swift Transportation', position: 'OTR Driver', location: 'Dallas, TX', salary: '$65,000' },
-        { id: 2, company: 'Werner Enterprises', position: 'Regional Driver', location: 'Houston, TX', salary: '$58,000' },
-        { id: 3, company: 'Schneider National', position: 'Local Driver', location: 'Austin, TX', salary: '$55,000' },
-      ];
+      const [recentJobs, setRecentJobs] = useState<any[]>([]);
 
-      const stats = [
-        { name: 'Course Progress', value: '75%', icon: TrendingUp, color: 'text-emerald-600' },
-        { name: 'Hours Completed', value: '120', icon: Clock, color: 'text-sky-500' },
-        { name: 'Certificates', value: '3', icon: Award, color: 'text-yellow-500' },
-        { name: 'Job Applications', value: '5', icon: Briefcase, color: 'text-purple-500' },
-      ];
+      const [stats, setStats] = useState<any[]>([]);
+      
+
+      useEffect(()=>{
+        let mounted = true;
+        (async ()=>{
+          try {
+            const [_, progress, jobs] = await Promise.all([
+              api.get('/payments/me').catch(()=>[]),
+              api.get('/lms/progress/me').catch(()=>[]),
+              api.get('/jobs').catch(()=>[]),
+            ]);
+            if (!mounted) return;
+            setUpcomingClasses([]);
+            const progressSummary: any[] = [];
+            const grouped = (progress||[]).reduce((acc:any, cur:any)=>{ acc[cur.courseId] = acc[cur.courseId] || { courseId: cur.courseId, completed: 0 }; acc[cur.courseId].completed++; return acc; }, {});
+            for (const k of Object.keys(grouped)) progressSummary.push({ name: `Course ${k}`, progress: Math.min(100, Math.round((grouped[k].completed/10)*100)), total: 10, completed: grouped[k].completed });
+            setCourseProgress(progressSummary);
+            setRecentJobs(jobs || []);
+            // derive hours as proxy from progress entries (assume each completed lesson ~1 hour)
+            const hoursCompleted = (progress||[]).length;
+            // compute certificates as completed courses (progress >= 100)
+            const certificatesCount = progressSummary.filter(p => p.progress >= 100).length;
+
+            setStats([
+              { name: 'Course Progress', value: progressSummary.length ? `${Math.round(progressSummary.reduce((s,c:any)=>s + c.progress,0)/progressSummary.length)}%` : '0%', icon: TrendingUp, color: 'text-emerald-600'},
+              { name: 'Hours Completed', value: `${hoursCompleted}`, icon: Clock, color: 'text-sky-500' },
+              { name: 'Certificates', value: certificatesCount, icon: Award, color: 'text-yellow-500' },
+              { name: 'Job Applications', value: (jobs||[]).length, icon: Briefcase, color: 'text-purple-500' },
+            ]);
+          } catch (err) {
+            console.error('Dashboard load error', err);
+            // Fall back to empty placeholders so UI still renders
+            setCourseProgress([]);
+            setRecentJobs([]);
+            setStats([
+              { name: 'Course Progress', value: '0%', icon: TrendingUp, color: 'text-emerald-600'},
+              { name: 'Hours Completed', value: '0', icon: Clock, color: 'text-sky-500' },
+              { name: 'Certificates', value: '0', icon: Award, color: 'text-yellow-500' },
+              { name: 'Job Applications', value: 0, icon: Briefcase, color: 'text-purple-500' },
+            ]);
+          } finally {
+            // done
+          }
+        })();
+        return ()=>{ mounted=false; };
+      }, []);
 
       return (
         <div className="p-6 max-w-7xl mx-auto">

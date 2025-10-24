@@ -6,6 +6,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
 import Home from './src/pages/Home';
+import { AuthProvider, useAuth } from './src/lib/AuthContext';
 import Programs from './src/pages/Programs';
 import ProgramDetail from './src/pages/ProgramDetail';
 import About from './src/pages/About';
@@ -24,6 +25,9 @@ import StudentDashboard from './src/pages/StudentDashboard';
 import StudentCourses from './src/pages/StudentCourses';
 import StudentJobs from './src/pages/StudentJobs';
 import StudentPayments from './src/pages/StudentPayments';
+import Documents from './src/pages/Documents';
+import Resumes from './src/pages/Resumes';
+import CourseViewer from './src/pages/CourseViewer';
 import StudentSchedule from './src/pages/StudentSchedule';
 import StudentSettings from './src/pages/StudentSettings';
 import InstructorDashboard from './src/pages/InstructorDashboard';
@@ -47,33 +51,52 @@ import DashboardLayout from './src/components/DashboardLayout';
 import NotFound from './src/pages/NotFound';
 
 const App: React.FC = () => {
-  const [userRole, setUserRole] = useState<string | null>(null);
+  // We need to use the AuthContext to derive the current user's role, but
+  // AuthProvider must wrap the parts that consume it. To keep the existing
+  // structure we render an inner component which reads the context.
 
-  useEffect(() => {
-    // Check for stored user role on app load
-    const storedRole = localStorage.getItem('userRole');
-    if (storedRole) {
-      setUserRole(storedRole);
-    }
-  }, []);
+  const InnerApp: React.FC = () => {
+  const { user, setUser } = useAuth();
+    const [userRole, setUserRole] = useState<string | null>(() => localStorage.getItem('userRole'));
 
-  const handleLogout = () => {
-    localStorage.removeItem('userRole');
-    setUserRole(null);
-  };
+    useEffect(() => {
+      // Sync role between AuthContext and local storage.
+      // Prefer an explicitly stored role (set by the login form) so a user selection
+      // like "Employer" isn't immediately overridden by a backend 'me' response
+      // during demo mode.
+      const stored = localStorage.getItem('userRole');
+      if (stored) {
+        setUserRole(stored);
+        return;
+      }
+      if (user && (user as any).role) {
+        setUserRole((user as any).role);
+        localStorage.setItem('userRole', (user as any).role);
+      } else if (!user) {
+        localStorage.removeItem('userRole');
+        setUserRole(null);
+      }
+    }, [user]);
 
-  const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles: string[] }> = ({ 
-    children, 
-    allowedRoles 
-  }) => {
-    if (!userRole || !allowedRoles.includes(userRole)) {
-      return <Navigate to="/login" replace />;
-    }
-    return <>{children}</>;
-  };
+    const handleLogout = () => {
+      // Clear token and auth state
+      localStorage.removeItem('token');
+      localStorage.removeItem('userRole');
+      setUser(null);
+    };
 
-  return (
-    <Theme appearance="inherit" radius="large" scaling="100%">
+    const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles: string[] }> = ({ 
+      children, 
+      allowedRoles 
+    }) => {
+      const role = userRole;
+      if (!role || !allowedRoles.includes(role)) {
+        return <Navigate to="/login" replace />;
+      }
+      return <>{children}</>;
+    };
+
+    return (
       <Router>
         <main className="min-h-screen">
           <Routes>
@@ -102,7 +125,10 @@ const App: React.FC = () => {
                     <Route path="dashboard" element={<StudentDashboard />} />
                     <Route path="courses" element={<StudentCourses />} />
                     <Route path="jobs" element={<StudentJobs />} />
+                    <Route path="course/:courseId" element={<CourseViewer />} />
                     <Route path="payments" element={<StudentPayments />} />
+                    <Route path="documents" element={<Documents />} />
+                    <Route path="resumes" element={<Resumes />} />
                     <Route path="schedule" element={<StudentSchedule />} />
                     <Route path="settings" element={<StudentSettings />} />
                   </Routes>
@@ -165,6 +191,14 @@ const App: React.FC = () => {
           />
         </main>
       </Router>
+    );
+  };
+
+  return (
+    <Theme appearance="inherit" radius="large" scaling="100%">
+      <AuthProvider>
+        <InnerApp />
+      </AuthProvider>
     </Theme>
   );
 }

@@ -5,96 +5,158 @@ import React, { useState } from 'react';
     import { motion } from 'framer-motion';
     import { toast } from 'react-toastify';
 
+    // Demo jobs shown immediately while API loads
+    const demoJobs = [
+      {
+        id: 'demo-1',
+        title: 'Class A CDL Driver - OTR',
+        company: 'Ace Trucking Co.',
+        location: 'Dallas, TX',
+        posted: '2 days ago',
+        description: 'Regional and OTR lanes, competitive pay, benefits.',
+        requirements: ['Valid CDL-A', '2+ years experience', 'Clean MVR'],
+        salary: '$1,200/wk',
+        type: 'Full-time',
+        remote: false,
+        urgent: true,
+        experience: 'mid'
+      },
+      {
+        id: 'demo-2',
+        title: 'Local Delivery Driver',
+        company: 'City Freight',
+        location: 'San Diego, CA',
+        posted: '1 week ago',
+        description: 'Local routes, home daily, steady schedule.',
+        requirements: ['CDL preferred', 'Customer service skills'],
+        salary: '$650/wk',
+        type: 'Contract',
+        remote: true,
+        experience: 'entry'
+      },
+      {
+        id: 'demo-3',
+        title: 'Night Shift Driver - Refrigerated',
+        company: 'CoolTrans',
+        location: 'Atlanta, GA',
+        posted: '3 days ago',
+        description: 'Night shifts, refrigerated cargo experience a plus.',
+        requirements: ['CDL-A', 'Experience with reefers'],
+        salary: '$1,000/wk',
+        type: 'Full-time',
+        remote: false,
+        experience: 'senior'
+      },
+      {
+        id: 'demo-4',
+        title: 'Flatbed Driver - Regional',
+        company: 'North Ridge Logistics',
+        location: 'Minneapolis, MN',
+        posted: '4 days ago',
+        description: 'Regional flatbed lanes with consistent miles and stop pay.',
+        requirements: ['CDL-A', 'Flatbed experience preferred'],
+        salary: '$1,100/wk',
+        type: 'Full-time',
+        remote: false,
+        experience: 'mid'
+      },
+      {
+        id: 'demo-5',
+        title: 'HazMat Certified Driver',
+        company: 'Shield Carriers',
+        location: 'Houston, TX',
+        posted: '6 days ago',
+        description: 'HazMat routes; strong safety culture and training provided.',
+        requirements: ['CDL-A', 'HazMat endorsement'],
+        salary: '$1,350/wk',
+        type: 'Full-time',
+        remote: false,
+        experience: 'senior',
+        urgent: true
+      },
+      {
+        id: 'demo-6',
+        title: 'Part-Time Shuttle Driver',
+        company: 'GreenCity Shuttle',
+        location: 'Portland, OR',
+        posted: '2 weeks ago',
+        description: 'Flexible evening and weekend shifts. No CDL required for shuttle routes.',
+        requirements: ['Clean driving record'],
+        salary: '$20/hr',
+        type: 'Part-time',
+        remote: true,
+        experience: 'entry'
+      },
+      {
+        id: 'demo-7',
+        title: 'Diesel Technician / Driver Hybrid',
+        company: 'FleetWorks',
+        location: 'Cleveland, OH',
+        posted: '3 days ago',
+        description: 'Maintain small fleet and run local deliveries as needed.',
+        requirements: ['Diesel tech experience', 'Valid driver license'],
+        salary: '$28/hr',
+        type: 'Full-time',
+        remote: false,
+        experience: 'mid'
+      }
+    ];
+
     const Jobs: React.FC = () => {
       const [searchTerm, setSearchTerm] = useState('');
       const [locationFilter, setLocationFilter] = useState('');
       const [typeFilter, setTypeFilter] = useState('');
+      const [remoteOnly, setRemoteOnly] = useState(false);
 
-      const jobs = [
-        {
-          id: 1,
-          title: 'OTR Truck Driver',
-          company: 'Swift Transportation',
-          location: 'Dallas, TX',
-          salary: '$65,000 - $85,000',
-          type: 'Full-time',
-          description: 'Seeking experienced OTR drivers for regional and long-haul routes. Home weekly with competitive pay and benefits.',
-          requirements: ['CDL-A required', '2+ years experience', 'Clean driving record'],
-          posted: '2 days ago',
-          urgent: true
-        },
-        {
-          id: 2,
-          title: 'Local Delivery Driver',
-          company: 'Werner Enterprises',
-          location: 'Houston, TX',
-          salary: '$55,000 - $65,000',
-          type: 'Full-time',
-          description: 'Local delivery routes with daily home time. Perfect for drivers preferring predictable schedules.',
-          requirements: ['CDL-B preferred', '1+ years experience', 'Local knowledge helpful'],
-          posted: '1 week ago',
-          urgent: false
-        },
-        {
-          id: 3,
-          title: 'Regional Driver',
-          company: 'Schneider National',
-          location: 'Austin, TX',
-          salary: '$60,000 - $75,000',
-          type: 'Full-time',
-          description: 'Regional driving opportunities with consistent routes and excellent benefits package.',
-          requirements: ['CDL-A required', '1+ years experience', 'Regional experience preferred'],
-          posted: '3 days ago',
-          urgent: false
-        },
-        {
-          id: 4,
-          title: 'Owner Operator',
-          company: 'CRST International',
-          location: 'San Antonio, TX',
-          salary: '$120,000 - $150,000',
-          type: 'Contract',
-          description: 'Owner operator opportunities with competitive revenue sharing and dedicated support.',
-          requirements: ['CDL-A required', 'Own truck', 'Business experience preferred'],
-          posted: '5 days ago',
-          urgent: true
-        },
-        {
-          id: 5,
-          title: 'Flatbed Driver',
-          company: 'Pride Transport',
-          location: 'Fort Worth, TX',
-          salary: '$70,000 - $90,000',
-          type: 'Full-time',
-          description: 'Specialized flatbed driving with premium pay for experienced flatbed drivers.',
-          requirements: ['CDL-A required', 'Flatbed experience', 'TWIC card preferred'],
-          posted: '1 day ago',
-          urgent: false
-        },
-        {
-          id: 6,
-          title: 'Company Driver',
-          company: 'US Xpress',
-          location: 'Dallas, TX',
-          salary: '$58,000 - $72,000',
-          type: 'Full-time',
-          description: 'Company driver positions with modern equipment and comprehensive benefits.',
-          requirements: ['CDL-A required', '6 months experience', 'Team player'],
-          posted: '4 days ago',
-          urgent: false
-        }
-      ];
+  const [jobs, setJobs] = React.useState<any[]>(demoJobs);
+      const [experienceLevel, setExperienceLevel] = useState('');
+      const [salaryMin, setSalaryMin] = useState('');
+      const [salaryMax, setSalaryMax] = useState('');
+      const [sortBy, setSortBy] = useState('recent');
 
+      // demoJobs moved to file scope for immediate rendering
+
+      React.useEffect(()=>{
+        let mounted = true;
+        import('../lib/api').then(({ api }) => {
+          api.get('/jobs').then((rows:any)=>{ if (!mounted) return; setJobs((rows && rows.length) ? rows : demoJobs); }).catch(err=>{ console.error('failed to load jobs', err); setJobs(demoJobs); });
+        });
+        return ()=>{ mounted=false; };
+      }, []);
+
+      // compute filtered jobs with additional filters
       const filteredJobs = jobs.filter(job => {
-        const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                             job.company.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesLocation = !locationFilter || job.location.toLowerCase().includes(locationFilter.toLowerCase());
+        const title = (job.title || job.position || '').toString();
+        const company = (job.company || '').toString();
+        const matchesSearch = title.toLowerCase().includes(searchTerm.toLowerCase()) || company.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesLocation = !locationFilter || (job.location||'').toLowerCase().includes(locationFilter.toLowerCase());
         const matchesType = !typeFilter || job.type === typeFilter;
-        return matchesSearch && matchesLocation && matchesType;
+        const matchesExperience = !experienceLevel || (job.experience||'').toLowerCase() === experienceLevel.toLowerCase();
+        const salaryNum = Number((job.salary||'').toString().replace(/[^0-9]/g, '')) || 0;
+        const minOk = !salaryMin || salaryNum >= Number(salaryMin);
+        const maxOk = !salaryMax || salaryNum <= Number(salaryMax);
+        const matchesRemote = !remoteOnly || job.remote === true;
+        return matchesSearch && matchesLocation && matchesType && matchesRemote && matchesExperience && minOk && maxOk;
       });
 
-      const handleApply = () => {
-        toast.success('Application submitted successfully! The employer will contact you soon.');
+      // apply sort
+      if (sortBy === 'salary') {
+        filteredJobs.sort((a,b) => {
+          const na = Number((a.salary||'').toString().replace(/[^0-9]/g, '')) || 0;
+          const nb = Number((b.salary||'').toString().replace(/[^0-9]/g, '')) || 0;
+          return nb - na;
+        });
+      }
+
+      const handleApply = async (id?: any) => {
+        try {
+          if (!id) return;
+          const { api } = await import('../lib/api');
+          await api.post(`/jobs/${id}/apply`);
+          toast.success('Application submitted successfully! The employer will contact you soon.');
+        } catch(err:any) {
+          toast.error(err?.data?.error || err.message || 'Apply failed');
+        }
       };
 
       return (
@@ -140,19 +202,41 @@ import React, { useState } from 'react';
                           className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                         />
                       </div>
-                      <select
-                        value={typeFilter}
-                        onChange={(e) => setTypeFilter(e.target.value)}
-                        className="px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                      >
-                        <option value="">All Types</option>
-                        <option value="Full-time">Full-time</option>
-                        <option value="Contract">Contract</option>
-                      </select>
-                      <button className="bg-emerald-600 text-white px-6 py-3 rounded-lg hover:bg-emerald-700 transition-colors flex items-center justify-center space-x-2">
-                        <Filter className="h-4 w-4" />
-                        <span>Search</span>
-                      </button>
+                      <div className="space-y-2">
+                        <select
+                          value={typeFilter}
+                          onChange={(e) => setTypeFilter(e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                        >
+                          <option value="">All Types</option>
+                          <option value="Full-time">Full-time</option>
+                          <option value="Contract">Contract</option>
+                        </select>
+                        <select value={experienceLevel} onChange={(e)=>setExperienceLevel(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                          <option value="">Any experience</option>
+                          <option value="entry">Entry</option>
+                          <option value="mid">Mid</option>
+                          <option value="senior">Senior</option>
+                        </select>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <label className="inline-flex items-center space-x-2">
+                          <input type="checkbox" checked={remoteOnly} onChange={(e)=>setRemoteOnly(e.target.checked)} className="h-4 w-4" />
+                          <span className="text-sm text-slate-600">Remote only</span>
+                        </label>
+                        <div className="flex items-center space-x-2">
+                          <input placeholder="Min $" value={salaryMin} onChange={(e)=>setSalaryMin(e.target.value)} className="w-20 px-2 py-2 border rounded" />
+                          <input placeholder="Max $" value={salaryMax} onChange={(e)=>setSalaryMax(e.target.value)} className="w-20 px-2 py-2 border rounded" />
+                          <select value={sortBy} onChange={(e)=>setSortBy(e.target.value)} className="px-3 py-2 border rounded">
+                            <option value="recent">Sort: Recent</option>
+                            <option value="salary">Sort: Salary</option>
+                          </select>
+                          <button className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors flex items-center justify-center space-x-2">
+                            <Filter className="h-4 w-4" />
+                            <span>Search</span>
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -164,15 +248,15 @@ import React, { useState } from 'react';
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between mb-8">
                   <h2 className="text-2xl font-bold text-slate-900 font-['Inter']">
-                    Available Positions ({filteredJobs.length})
+                    Available Positions ({filteredJobs.length || demoJobs.length})
                   </h2>
                   <div className="text-sm text-slate-600">
-                    Showing {filteredJobs.length} of {jobs.length} jobs
+                    Showing {filteredJobs.length || demoJobs.length} of {(jobs && jobs.length) || demoJobs.length} jobs
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {filteredJobs.map((job, index) => (
+                  {(filteredJobs.length ? filteredJobs : demoJobs).map((job, index) => (
                     <motion.div
                       key={job.id}
                       initial={{ opacity: 0, y: 20 }}
@@ -183,7 +267,7 @@ import React, { useState } from 'react';
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-2">
-                            <h3 className="text-xl font-semibold text-slate-900">{job.title}</h3>
+                            <h3 className="text-xl font-semibold text-slate-900">{job.title || job.position || 'Untitled position'}</h3>
                             {job.urgent && (
                               <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">
                                 Urgent
@@ -193,11 +277,11 @@ import React, { useState } from 'react';
                           <div className="flex items-center space-x-4 text-sm text-slate-600 mb-3">
                             <div className="flex items-center space-x-1">
                               <Building className="h-4 w-4" />
-                              <span>{job.company}</span>
+                              <span>{job.company || ''}</span>
                             </div>
                             <div className="flex items-center space-x-1">
                               <MapPin className="h-4 w-4" />
-                              <span>{job.location}</span>
+                              <span>{job.location || ''}</span>
                             </div>
                             <div className="flex items-center space-x-1">
                               <Clock className="h-4 w-4" />
@@ -207,36 +291,30 @@ import React, { useState } from 'react';
                         </div>
                         <div className="text-right">
                           <div className="flex items-center space-x-1 text-emerald-600 font-semibold mb-1">
-                            <span>{job.salary}</span>
+                            <span>{job.salary || ''}</span>
                           </div>
-                          <span className="text-xs text-slate-500">{job.type}</span>
+                          <span className="text-xs text-slate-500">{job.type || ''}</span>
                         </div>
                       </div>
 
-                      <p className="text-slate-600 mb-4">{job.description}</p>
+                      <p className="text-slate-600 mb-4">{job.description || ''}</p>
 
                       <div className="mb-4">
                         <h4 className="font-medium text-slate-900 mb-2">Requirements:</h4>
                         <div className="flex flex-wrap gap-2">
-                          {job.requirements.map((req, idx) => (
-                            <span
-                              key={idx}
-                              className="bg-slate-100 text-slate-700 px-2 py-1 rounded text-xs"
-                            >
-                              {req}
-                            </span>
+                          {(job.requirements || []).map((req:any, idx:number) => (
+                            <span key={idx} className="bg-slate-100 text-slate-700 px-2 py-1 rounded text-xs">{req}</span>
                           ))}
                         </div>
                       </div>
 
                       <div className="flex space-x-3">
-                        <button
-                          onClick={() => handleApply()}
-                          className="flex-1 bg-emerald-600 text-white py-2 px-4 rounded-lg hover:bg-emerald-700 transition-colors font-medium"
-                        >
-                          Apply Now
-                        </button>
-                        <button className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors">
+                        <button onClick={() => handleApply(job.id)} className="flex-1 bg-emerald-600 text-white py-2 px-4 rounded-lg hover:bg-emerald-700 transition-colors font-medium">Apply Now</button>
+                        <button onClick={()=>{
+                          const saved = JSON.parse(localStorage.getItem('savedJobs')||'[]');
+                          if (!saved.includes(job.id)) { saved.push(job.id); localStorage.setItem('savedJobs', JSON.stringify(saved)); toast.success('Job saved'); }
+                          else { toast.info('Already saved'); }
+                        }} className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors">
                           Save Job
                         </button>
                       </div>

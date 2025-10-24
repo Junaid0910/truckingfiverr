@@ -39,7 +39,6 @@ const Header: React.FC<HeaderProps> = ({ userRole, onLogout }) => {
     ],
     employer: [
       { name: 'Dashboard', href: '/employer/dashboard' },
-      { name: 'Employees', href: '/employer/employees' },
       { name: 'Billing', href: '/employer/billing' },
     ],
   };

@@ -1,5 +1,6 @@
 import express from 'express';
 import db from '../db.js';
+import { requireAuth, requireRole } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -9,7 +10,7 @@ router.get('/', async (req, res) => {
   res.json(rows);
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requireAuth, requireRole('admin'), async (req, res) => {
   const { title, description } = req.body;
   if (!title) return res.status(400).json({ error: 'title required' });
   await db.read();

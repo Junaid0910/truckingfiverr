@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { 
   Menu, 
@@ -19,9 +19,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface DashboardLayoutProps {
   userRole: 'student' | 'instructor' | 'admin' | 'employer';
   onLogout: () => void;
+  children?: React.ReactNode;
 }
 
-const DashboardLayout: React.FC<DashboardLayoutProps> = ({ userRole, onLogout }) => {
+const DashboardLayout: React.FC<DashboardLayoutProps> = ({ userRole, onLogout, children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
 
@@ -52,7 +53,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ userRole, onLogout })
     ],
     employer: [
       { name: 'Dashboard', href: '/employer/dashboard', icon: Home },
-      { name: 'Employees', href: '/employer/employees', icon: Users },
       { name: 'Training Programs', href: '/employer/programs', icon: BookOpen },
       { name: 'Billing', href: '/employer/billing', icon: CreditCard },
       { name: 'Settings', href: '/employer/settings', icon: Settings },
@@ -60,6 +60,27 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ userRole, onLogout })
   };
 
   const navigation = navigationConfig[userRole];
+
+  const [profile, setProfile] = useState<any>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    import('../lib/api').then(({ api }) => {
+      (async () => {
+        try {
+          const resp = await api.get('/profiles/me');
+          if (!mounted) return;
+          setProfile(resp.profile || null);
+        } catch (err) {
+          console.error('Failed to load profile for sidebar', err);
+        }
+      })();
+    });
+
+    const onUpdate = (e: any) => { if (e?.detail) setProfile(e.detail); };
+    window.addEventListener('profileUpdated', onUpdate as EventListener);
+    return () => { mounted = false; window.removeEventListener('profileUpdated', onUpdate as EventListener); };
+  }, []);
 
   const Sidebar = ({ mobile = false }) => (
     <div className={`flex flex-col h-full ${mobile ? 'w-full' : 'w-64'}`}>
@@ -84,11 +105,15 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ userRole, onLogout })
       {/* User Info */}
       <div className="px-6 py-4 border-b border-slate-200">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
-            <User className="h-5 w-5 text-emerald-600" aria-hidden="true" />
+          <div className="w-10 h-10 rounded-full overflow-hidden bg-emerald-100 flex items-center justify-center">
+            {profile?.avatar ? (
+              <img src={profile.avatar} alt="avatar" className="w-10 h-10 object-cover" />
+            ) : (
+              <User className="h-5 w-5 text-emerald-600" aria-hidden="true" />
+            )}
           </div>
           <div>
-            <div className="text-sm font-medium text-slate-900">Demo User</div>
+            <div className="text-sm font-medium text-slate-900">{profile?.name || 'Demo User'}</div>
             <div className="text-xs text-slate-500 capitalize">{userRole}</div>
           </div>
         </div>
@@ -204,7 +229,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ userRole, onLogout })
 
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto">
-          <Outlet />
+          {/* If App passed children (it currently does) render them; otherwise use Outlet for nested routes */}
+          {children ?? <Outlet />}
         </main>
       </div>
     </div>

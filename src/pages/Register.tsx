@@ -64,21 +64,13 @@ import React, { useState } from 'react';
       const onSubmit = async (formData: RegisterFormData) => {
         setIsSubmitting(true);
         try {
-          const res = await fetch('/api/auth/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: formData.email, password: formData.password })
-          });
-          const body = await res.json();
-          if (!res.ok) {
-            toast.error(body?.error || 'Registration failed. Please try again.');
-            return;
-          }
+          const { api } = await import('../lib/api');
+          await api.post('/auth/register', { email: formData.email, password: formData.password });
           toast.success('Registration successful! Please log in.');
           navigate('/login');
-        } catch (err) {
+        } catch (err:any) {
           console.error('register error', err);
-          toast.error('Registration failed. Please try again.');
+          toast.error(err?.data?.error || err.message || 'Registration failed. Please try again.');
         } finally {
           setIsSubmitting(false);
         }

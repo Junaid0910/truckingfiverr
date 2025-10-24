@@ -7,6 +7,22 @@ const adapter = new JSONFile(file);
 const db = new Low(adapter);
 
 await db.read();
-db.data ||= { users: [], programs: [], lastId: 0 };
+// Ensure default collections exist to avoid crashes when routes expect them
+// Ensure commonly-used collections exist to avoid crashes when routes expect them
+db.data ||= {
+	users: [],
+	programs: [],
+	courses: [],
+	payments: [],
+	documents: [],
+	enrollments: [],
+	progress: [],
+	quizzes: [],
+	attempts: [],
+	certificates: [],
+	notifications: [],
+	profiles: [],
+	lastId: 0
+};
 
 export default db;

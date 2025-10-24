@@ -62,28 +62,28 @@ import React from 'react';
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Link
                     to="/employer/employees"
-                    className="flex items-center space-x-3 p-4 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors"
+                    className="flex items-center space-x-3 p-4 bg-emerald-50 rounded-lg hover:bg-yellow-100 transition-colors"
                   >
                     <Users className="h-6 w-6 text-emerald-600" />
                     <span className="font-medium text-slate-900">Manage Employees</span>
                   </Link>
                   <Link
                     to="/employer/programs"
-                    className="flex items-center space-x-3 p-4 bg-sky-50 rounded-lg hover:bg-sky-100 transition-colors"
+                    className="flex items-center space-x-3 p-4 bg-emerald-50 rounded-lg hover:bg-sky-100 transition-colors"
                   >
                     <Truck className="h-6 w-6 text-sky-500" />
                     <span className="font-medium text-slate-900">View Programs</span>
                   </Link>
                   <Link
                     to="/employer/billing"
-                    className="flex items-center space-x-3 p-4 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition-colors"
+                    className="flex items-center space-x-3 p-4 bg-emerald-50 rounded-lg hover:bg-yellow-100 transition-colors"
                   >
                     <CreditCard className="h-6 w-6 text-yellow-500" />
                     <span className="font-medium text-slate-900">Billing & Payments</span>
                   </Link>
                   <Link
                     to="/employer/settings"
-                    className="flex items-center space-x-3 p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors"
+                    className="flex items-center space-x-3 p-4 bg-emerald-50 rounded-lg hover:bg-purple-100 transition-colors"
                   >
                     <TrendingUp className="h-6 w-6 text-purple-500" />
                     <span className="font-medium text-slate-900">Account Settings</span>
